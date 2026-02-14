@@ -13,6 +13,7 @@ import inquirer
 import json
 from pathlib import Path
 from typing import Dict, Any
+import importlib.resources
 
 # ANSI color codes
 class Colors:
@@ -67,8 +68,29 @@ def print_error(msg: str) -> None:
 
 
 def get_templates_dir() -> Path:
-    """Get the templates directory from the installed package."""
-    return Path(__file__).parent.parent.parent / "templates"
+    """Get templates directory from installed package or source fallback."""
+    import importlib.resources as resources
+
+    # Method 1: Try importlib.resources first (for installed packages)
+    try:
+        # Check if we can access templates as package data
+        if resources.is_resource("tool_forge", "templates"):
+            try:
+                # Python 3.9+ method
+                with resources.files("tool_forge") as pkg_dir:
+                    templates_path = Path(pkg_dir) / "templates"
+                    if templates_path.exists():
+                        return templates_path
+            except (AttributeError, TypeError):
+                # Python 3.7-3.8 fallback
+                with resources.path("tool_forge", "templates") as templates_path:
+                    return Path(templates_path)
+    except Exception:
+        pass
+
+    # Method 2: Fallback to source directory (for editable installs)
+    # This ensures tool works during development
+    return Path(__file__).parent.parent / "templates"
 
 
 def create_or_update_settings(claude_dir: Path) -> None:
@@ -96,7 +118,17 @@ def create_or_update_settings(claude_dir: Path) -> None:
             ]
         },
         "companyAnnouncements": [
-            "🔨 Tool-Forge is active! Use /create to start tool creation"
+            "🔨 Tool-Forge is active! Use /create to start tool creation",
+            "",
+            "📋 Tool-Forge workflow:",
+            "  1. Describe your tool requirement",
+            "  2. Review existing solutions (AI will search)",
+            "  3. Decide: Use existing / Customize / Build new",
+            "  4. Develop with AI assistance (if building)",
+            "  5. Publish and share with community",
+            "",
+            "💡 Run 'tool-forge init' to reinitialize",
+            "📖 Run 'tool-forge --help' for more info"
         ]
     }
 
@@ -160,8 +192,10 @@ def init_project() -> None:
     cwd = Path.cwd()
     templates_dir = get_templates_dir()
 
-    print(BANNER)
-    print_header("\nInitializing Tool-Forge in current project...\n")
+    # Get current project name for display
+    project_name = cwd.name
+
+    print_header(f"\nInitializing Tool-Forge in {project_name}...\n")
 
     # Create .claude directory structure
     claude_dir = cwd / ".claude"
@@ -239,7 +273,7 @@ def init_project() -> None:
     print_header("Available commands in Claude Code:")
     print(f"  {Colors.CYAN}/create{Colors.RESET}              - Create a new tool")
     print()
-    print_info("Tool-Forge will guide you through:")
+    print_info(f"{project_name} is now ready for tool creation:")
     print("  1. 🔍 Requirement Analysis")
     print("  2. 🌐 Solution Discovery")
     print("  3. 📊 Solution Evaluation")

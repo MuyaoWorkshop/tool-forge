@@ -43,7 +43,10 @@ Issues = "https://github.com/MuyaoWorkshop/tool-forge/issues"
 tool-forge = "tool_forge.cli.main:main"
 
 [tool.setuptools]
-packages = ["src"]
+packages = ["tool_forge"]
 
 [tool.setuptools.package-data]
 tool_forge = ["templates/**/*.md", "templates/**/*.py", "templates/**/*.json"]
+
+[tool.setuptools.package-dir]
+tool_forge = "src/tool_forge"
